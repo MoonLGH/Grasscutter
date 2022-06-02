@@ -6,10 +6,8 @@ import java.util.Calendar;
 import emu.grasscutter.auth.AuthenticationSystem;
 import emu.grasscutter.auth.DefaultAuthentication;
 import emu.grasscutter.command.CommandMap;
-import emu.grasscutter.command.DefaultPermissionHandler;
-import emu.grasscutter.command.PermissionHandler;
-import emu.grasscutter.game.managers.energy.EnergyManager;
-import emu.grasscutter.game.managers.stamina.StaminaManager;
+import emu.grasscutter.game.managers.EnergyManager.EnergyManager;
+import emu.grasscutter.game.managers.StaminaManager.StaminaManager;
 import emu.grasscutter.plugin.PluginManager;
 import emu.grasscutter.plugin.api.ServerHook;
 import emu.grasscutter.scripts.ScriptLoader;
@@ -60,7 +58,6 @@ public final class Grasscutter {
 	private static GameServer gameServer;
 	private static PluginManager pluginManager;
 	private static AuthenticationSystem authenticationSystem;
-	private static PermissionHandler permissionHandler;
 
 	public static final Reflections reflector = new Reflections("emu.grasscutter");
 	public static ConfigContainer config;
@@ -105,8 +102,8 @@ public final class Grasscutter {
 	
 		// Initialize server.
 		Grasscutter.getLogger().info(translate("messages.status.starting"));
-		Grasscutter.getLogger().info(translate("messages.status.game_version", GameConstants.VERSION));
-		Grasscutter.getLogger().info(translate("messages.status.version", BuildConfig.VERSION, BuildConfig.GIT_HASH));
+		Grasscutter.getLogger().info("THIS IS AN EXPERIMENTAL BUILD OF GRASSCUTTER FOR 2.7.50/2.8");
+		Grasscutter.getLogger().info("DON'T LEAK <3");
 	
 		// Load all resources.
 		Grasscutter.updateDayOfWeek();
@@ -117,9 +114,8 @@ public final class Grasscutter {
 		// Initialize database.
 		DatabaseManager.initialize();
 		
-		// Initialize the default systems.
+		// Initialize the default authentication system.
 		authenticationSystem = new DefaultAuthentication();
-		permissionHandler = new DefaultPermissionHandler();
 	
 		// Create server instances.
 		httpServer = new HttpServer();
@@ -291,10 +287,6 @@ public final class Grasscutter {
 		return authenticationSystem;
 	}
 
-	public static PermissionHandler getPermissionHandler() {
-		return permissionHandler;
-	}
-
 	public static int getCurrentDayOfWeek() {
 		return day;
 	}
@@ -352,14 +344,6 @@ public final class Grasscutter {
 	 */
 	public static void setAuthenticationSystem(AuthenticationSystem authenticationSystem) {
 		Grasscutter.authenticationSystem = authenticationSystem;
-	}
-
-	/**
-	 * Sets the permission handler for the server.
-	 * @param permissionHandler The permission handler to use.
-	 */
-	public static void setPermissionHandler(PermissionHandler permissionHandler) {
-		Grasscutter.permissionHandler = permissionHandler;
 	}
 
 	/*
