@@ -1008,9 +1008,7 @@ public class Player {
 			this.messageHandler.append(message.toString());
 			return;
 		}
-
-		this.getServer().getChatManager().sendPrivateMessageFromServer(getUid(), message.toString());
-		// this.sendPacket(new PacketPrivateChatNotify(GameConstants.SERVER_CONSOLE_UID, getUid(), message.toString()));
+		this.sendPacket(new PacketPrivateChatNotify(GameConstants.SERVER_CONSOLE_UID, getUid(), message.toString()));
 	}
 
 	/**
@@ -1020,8 +1018,7 @@ public class Player {
 	 * @param message The message to send.
 	 */
 	public void sendMessage(Player sender, Object message) {
-		// this.sendPacket(new PacketPrivateChatNotify(sender.getUid(), this.getUid(), message.toString()));
-		this.getServer().getChatManager().sendPrivateMessage(sender, this.getUid(), message.toString());
+		this.sendPacket(new PacketPrivateChatNotify(sender.getUid(), this.getUid(), message.toString()));
 	}
 
 	// ---------------------MAIL------------------------
@@ -1462,9 +1459,6 @@ public class Player {
 
 	public void onLogout() {
 		try{
-			// Clear chat history.
-			this.getServer().getChatManager().clearHistoryOnLogout(this);
-
 			// stop stamina calculation
 			getStaminaManager().stopSustainedStaminaHandler();
 
@@ -1489,9 +1483,6 @@ public class Player {
 
 			// Call quit event.
 			PlayerQuitEvent event = new PlayerQuitEvent(this); event.call();
-
-			//reset wood
-			getDeforestationManager().resetWood();
 		}catch (Throwable e){
 			e.printStackTrace();
 			Grasscutter.getLogger().warn("Player (UID {}) save failure", getUid());
