@@ -3,7 +3,7 @@
 
 <div align="center"><a href="https://discord.gg/T5vZU6UyeG"><img alt="Discord - Grasscutter" src="https://img.shields.io/discord/965284035985305680?label=Discord&logo=discord&style=for-the-badge"></a></div>
 
-EN | [简中](README_zh-CN.md) | [繁中](README_zh-TW.md) | [FR](README_fr-FR.md) | [ES](README_es-ES.md) | [HE](README_HE.md)
+EN | [中文](README_zh-CN.md) | [繁中](README_zh-TW.md) | [FR](README_fr-FR.md)
 
 ## Disclaimer
 This is an experimental build of Grasscutter to support 2.7.50/2.8 and is not intended to be used as a public server. \
@@ -38,7 +38,7 @@ Have fun developers :)
 
   **Note:** If you just want to **run it**, then **jre** only is fine.
 
-* [MongoDB](https://www.mongodb.com/try/download/community) (recommended 4.0+)
+* MongoDB (recommended 4.0+)
 
 * Proxy daemon: mitmproxy (mitmdump, recommended), Fiddler Classic, etc.
 
@@ -47,21 +47,21 @@ Have fun developers :)
 **Note:** If you updated from an older version, delete `config.json` to regenerate it.
 
 1. Get `grasscutter.jar`
-   - Download from [actions](https://github.com/Grasscutters/Grasscutter/suites/6895963598/artifacts/267483297)
+   - Download from [actions](https://nightly.link/Grasscutters/Grasscutter/workflows/build/stable/Grasscutter.zip)
    - [Build by yourself](#Building)
 2. Create a `resources` folder in the directory where grasscutter.jar is located and move your `BinOutput` and `ExcelBinOutput` folders there *(Check the [wiki](https://github.com/Grasscutters/Grasscutter/wiki) for more details how to get those.)*
 3. Run Grasscutter with `java -jar grasscutter.jar`. **Make sure mongodb service is running as well.**
 
 ### Connecting with the client
 
-½. Create an account using [server console command](https://github.com/Grasscutters/Grasscutter/wiki/Commands#targeting).
+½. Create an account using [server console command](#Commands).
 
 1. Redirect traffic: (choose one)
     - mitmdump: `mitmdump -s proxy.py -k`
     
       Trust CA certificate:
     
-      ​	**Note:**The CA certificate is usually stored in `%USERPROFILE%\ .mitmproxy`, or you can download it from `http://mitm.it`
+      ​	**Note:**The CA certificate is usually stored in `% USERPROFILE%\ .mitmproxy`, or you can download it from `http://mitm.it`
     
       ​	Double click for [install](https://docs.microsoft.com/en-us/skype-sdk/sdn/articles/installing-the-trusted-root-certificate#installing-a-trusted-root-certificate) or ...
     
@@ -109,7 +109,7 @@ chmod +x gradlew
 You can find the output jar in the root of the project folder.
 
 ### Commands have moved to the [wiki](https://github.com/Grasscutters/Grasscutter/wiki/Commands)!
-
+ 
 # Quick Troubleshooting
 
 * If compiling wasn't successful, please check your JDK installation (JDK 17 and validated JDK's bin PATH variable)
