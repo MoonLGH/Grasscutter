@@ -3,6 +3,7 @@ package emu.grasscutter.game.world;
 import emu.grasscutter.Grasscutter;
 import emu.grasscutter.data.GameData;
 import emu.grasscutter.data.GameDepot;
+import emu.grasscutter.data.binout.SceneNpcBornEntry;
 import emu.grasscutter.data.excels.*;
 import emu.grasscutter.game.dungeons.DungeonSettleListener;
 import emu.grasscutter.game.entity.*;
@@ -30,43 +31,46 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import org.danilopianini.util.SpatialIndex;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class Scene {
 	private final World world;
 	private final SceneData sceneData;
 	private final List<Player> players;
-	private final Int2ObjectMap<GameEntity> entities;
-	
+	private final Map<Integer, GameEntity> entities;
 	private final Set<SpawnDataEntry> spawnedEntities;
 	private final Set<SpawnDataEntry> deadSpawnedEntities;
 	private final Set<SceneBlock> loadedBlocks;
 	private boolean dontDestroyWhenEmpty;
-	
+
 	private int autoCloseTime;
 	private int time;
-	
+
 	private SceneScriptManager scriptManager;
 	private WorldChallenge challenge;
 	private List<DungeonSettleListener> dungeonSettleListeners;
 	private DungeonData dungeonData;
 	private int prevScene; // Id of the previous scene
 	private int prevScenePoint;
+	private Set<SceneNpcBornEntry> npcBornEntrySet;
 	public Scene(World world, SceneData sceneData) {
 		this.world = world;
 		this.sceneData = sceneData;
-		this.players = Collections.synchronizedList(new ArrayList<>());
-		this.entities = Int2ObjectMaps.synchronize(new Int2ObjectOpenHashMap<>());
+		this.players = new CopyOnWriteArrayList<>();
+		this.entities = new ConcurrentHashMap<>();
 
 		this.time = 8 * 60;
 		this.prevScene = 3;
-		
-		this.spawnedEntities = new HashSet<>();
-		this.deadSpawnedEntities = new HashSet<>();
-		this.loadedBlocks = new HashSet<>();
+
+		this.spawnedEntities = ConcurrentHashMap.newKeySet();
+		this.deadSpawnedEntities = ConcurrentHashMap.newKeySet();
+		this.loadedBlocks = ConcurrentHashMap.newKeySet();
+		this.npcBornEntrySet = ConcurrentHashMap.newKeySet();
 		this.scriptManager = new SceneScriptManager(this);
 	}
-	
+
 	public int getId() {
 		return sceneData.getId();
 	}
@@ -86,15 +90,15 @@ public class Scene {
 	public List<Player> getPlayers() {
 		return players;
 	}
-	
+
 	public int getPlayerCount() {
 		return this.getPlayers().size();
 	}
 
-	public Int2ObjectMap<GameEntity> getEntities() {
+	public Map<Integer, GameEntity> getEntities() {
 		return entities;
 	}
-	
+
 	public GameEntity getEntityById(int id) {
 		return this.entities.get(id);
 	}
@@ -425,6 +429,8 @@ public class Scene {
 		if(challenge != null){
 			challenge.onCheckTimeOut();
 		}
+
+        checkNpcGroup();
 	}
 
 	public int getEntityLevel(int baseLevel, int worldLevelOverride) {
@@ -434,6 +440,25 @@ public class Scene {
 
 		return level;
 	}
+    public void checkNpcGroup(){
+        Set<SceneNpcBornEntry> npcBornEntries = ConcurrentHashMap.newKeySet();
+        for (Player player : this.getPlayers()) {
+            npcBornEntries.addAll(loadNpcForPlayer(player));
+        }
+
+        // clear the unreachable group for client
+        var toUnload = this.npcBornEntrySet.stream()
+            .filter(i -> !npcBornEntries.contains(i))
+            .map(SceneNpcBornEntry::getGroupId)
+            .toList();
+
+        if(toUnload.size() > 0){
+            broadcastPacket(new PacketGroupUnloadNotify(toUnload));
+            Grasscutter.getLogger().debug("Unload NPC Group {}", toUnload);
+        }
+        // exchange the new npcBornEntry Set
+        this.npcBornEntrySet = npcBornEntries;
+    }
 
 	// TODO - Test
 	public synchronized void checkSpawns() {
@@ -568,9 +593,6 @@ public class Scene {
 						.toList();
 				onLoadGroup(toLoad);
 			}
-			for (Player player : this.getPlayers()) {
-				getScriptManager().meetEntities(loadNpcForPlayer(player, block));
-			}
 		}
 
 	}
@@ -641,15 +663,10 @@ public class Scene {
 			var suiteData = group.getSuiteByIndex(suite);
 			suiteData.sceneTriggers.forEach(getScriptManager()::registerTrigger);
 
-			entities.addAll(suiteData.sceneGadgets.stream()
-					.map(g -> scriptManager.createGadget(group.id, group.block_id, g))
-					.filter(Objects::nonNull)
-					.toList());
-			entities.addAll(suiteData.sceneMonsters.stream()
-					.map(mob -> scriptManager.createMonster(group.id, group.block_id, mob))
-					.filter(Objects::nonNull)
-					.toList());
+			entities.addAll(scriptManager.getGadgetsInGroupSuite(group, suiteData));
+			entities.addAll(scriptManager.getMonstersInGroupSuite(group, suiteData));
 
+            scriptManager.registerRegionInGroupSuite(group, suiteData);
 		}
 
 		scriptManager.meetEntities(entities);
@@ -666,19 +683,18 @@ public class Scene {
 			toRemove.forEach(this::removeEntityDirectly);
 			this.broadcastPacket(new PacketSceneEntityDisappearNotify(toRemove, VisionType.VISION_TYPE_REMOVE));
 		}
-		
+
 		for (SceneGroup group : block.groups.values()) {
 			if(group.triggers != null){
 				group.triggers.values().forEach(getScriptManager()::deregisterTrigger);
 			}
 			if(group.regions != null){
-				group.regions.forEach(getScriptManager()::deregisterRegion);
+                group.regions.values().forEach(getScriptManager()::deregisterRegion);
 			}
 		}
 		scriptManager.getLoadedGroupSetPerBlock().remove(block.id);
 		Grasscutter.getLogger().info("Scene {} Block {} is unloaded.", this.getId(), block.id);
 	}
-	
 	// Gadgets
 
 	public void onPlayerCreateGadget(EntityClientGadget gadget) {
@@ -759,47 +775,27 @@ public class Scene {
 			addEntity(entity);
 		}
 	}
-	public List<EntityNPC> loadNpcForPlayer(Player player, SceneBlock block){
-		if(!block.contains(player.getPos())){
-			return List.of();
-		}
-
+    public void loadNpcForPlayerEnter(Player player){
+        this.npcBornEntrySet.addAll(loadNpcForPlayer(player));
+    }
+	private List<SceneNpcBornEntry> loadNpcForPlayer(Player player){
 		var pos = player.getPos();
 		var data = GameData.getSceneNpcBornData().get(getId());
 		if(data == null){
 			return List.of();
 		}
 
-		var npcs = SceneIndexManager.queryNeighbors(data.getIndex(), pos.toDoubleArray(),
+		var npcList = SceneIndexManager.queryNeighbors(data.getIndex(), pos.toDoubleArray(),
 				Grasscutter.getConfig().server.game.loadEntitiesForPlayerRange);
-		var entityNPCS = npcs.stream().map(item -> {
-					var group = data.getGroups().get(item.getGroupId());
-					if(group == null){
-						group = SceneGroup.of(item.getGroupId());
-						data.getGroups().putIfAbsent(item.getGroupId(), group);
-						group.load(getId());
-					}
 
-					if(group.npc == null){
-						return null;
-					}
-					var npc = group.npc.get(item.getConfigId());
-					if(npc == null){
-						return null;
-					}
+		var sceneNpcBornEntries = npcList.stream()
+            .filter(i -> !this.npcBornEntrySet.contains(i))
+            .toList();
 
-					return getScriptManager().createNPC(npc, block.id, item.getSuiteIdList().get(0));
-				})
-				.filter(Objects::nonNull)
-				.filter(item -> getEntities().values().stream()
-						.filter(e -> e instanceof EntityNPC)
-						.noneMatch(e -> e.getConfigId() == item.getConfigId()))
-				.toList();
-
-		if(entityNPCS.size() > 0){
-			broadcastPacket(new PacketGroupSuiteNotify(entityNPCS));
+		if(sceneNpcBornEntries.size() > 0){
+			this.broadcastPacket(new PacketGroupSuiteNotify(sceneNpcBornEntries));
+            Grasscutter.getLogger().debug("Loaded Npc Group Suite {}", sceneNpcBornEntries);
 		}
-
-		return entityNPCS;
+        return npcList;
 	}
 }
