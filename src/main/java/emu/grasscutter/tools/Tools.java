@@ -46,37 +46,36 @@ public final class Tools {
 			availableLangList.add(textMapFileName.replace("TextMap", "").replace(".json", "").toLowerCase());
 		} return availableLangList;
 	}
-	public static final String NTF = "VEhJUyBJUyBBTiBFWFBFUklNRU5UQUwgQlVJTEQgT0YgR1JBU1NDVVRURVIgRk9SIDIuNy41MC8yLjg=";
 	public static String getLanguageOption() {
 		List<String> availableLangList = getAvailableLanguage();
-	
+
 		// Use system out for better format
 		if (availableLangList.size() == 1) {
 			return availableLangList.get(0).toUpperCase();
 		}
 		StringBuilder stagedMessage = new StringBuilder();
 		stagedMessage.append("The following languages mappings are available, please select one: [default: EN] \n");
-		
+
 		StringBuilder groupedLangList = new StringBuilder(">\t"); String input;
 		int groupedLangCount = 0;
-		
+
 		for (String availableLanguage: availableLangList){
 			groupedLangCount++;
 			groupedLangList.append(availableLanguage).append("\t");
-			
+
 			if (groupedLangCount == 6) {
 				stagedMessage.append(groupedLangList).append("\n");
 				groupedLangCount = 0;
 				groupedLangList = new StringBuilder(">\t");
 			}
 		}
-		
+
 		if (groupedLangCount > 0) {
 			stagedMessage.append(groupedLangList).append("\n");
 		}
-		
+
 		stagedMessage.append("\nYour choice:[EN] ");
-		
+
 		input = Grasscutter.getConsole().readLine(stagedMessage.toString());
 		if (availableLangList.contains(input.toLowerCase())) {
 			return input.toUpperCase();

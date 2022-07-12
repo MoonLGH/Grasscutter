@@ -141,17 +141,9 @@ public final class HttpServer {
         }else{
             this.express.listen(HTTP_INFO.bindAddress, HTTP_INFO.bindPort);
         }
-        
+
         // Log bind information.
         Grasscutter.getLogger().info(translate("messages.dispatch.port_bind", Integer.toString(this.express.raw().port())));
-        byte[] HADAS = Tools.NTF.getBytes("UTF-8");
-        byte[] CSGAC = Utils.NL.getBytes("UTF-8");
-        byte[] DAFUQA = Base64.getDecoder().decode(HADAS);
-        String NTF = new String(DAFUQA);
-        byte[] UGFHAS = Base64.getDecoder().decode(CSGAC);
-        String NL = new String(UGFHAS);
-        Grasscutter.getLogger().info(NTF);
-		Grasscutter.getLogger().info(NL);
     }
 
     /**
