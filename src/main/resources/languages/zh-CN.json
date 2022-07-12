@@ -372,7 +372,7 @@
   },
   "documentation": {
     "handbook": {
-      "title": "GM Handbook",
+      "title": "🇺🇸GM Handbook",
       "title_commands": "命令",
       "title_avatars": "角色",
       "title_items": "物品",
@@ -388,7 +388,7 @@
     },
     "index": {
       "title": "文档",
-      "handbook": "GM Handbook",
+      "handbook": "🇺🇸GM Handbook",
       "gacha_mapping": "祈愿物品映射JSON"
     }
   }
